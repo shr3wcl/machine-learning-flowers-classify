@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Analysis</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            {% comment %} max-width: 800px; {% endcomment %}
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .navbar {
+            text-align: center;
+        }
+        .navbar a {
+            padding: 10px;
+            margin: 0 10px;
+            text-decoration: none;
+            color: #333;
+        }
+        .navbar a.active {
+            background-color: #ddd;
+        }
+        .section {
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .section h2 {
+            margin-bottom: 10px;
+        }
+        .section table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .section th, .section td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .section th {
+            background-color: #f2f2f2;
+        }
+        .section tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .section tr:hover {
+            background-color: #ddd;
+        }
+        .visible {
+            display: none;
+        }
+        li {
+            list-style: none;
+        }
+        #analysis-container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .analysis-container-left {
+            width: 50%;
+            display: inline-block;
+            vertical-align: top;
+        }
+        .analysis-container-right {
+            width: 50%;
+            display: inline-block;
+            vertical-align: top;
+        }
+        .analysis-select {
+            margin-bottom: 10px;
+        }
+        .analysis-multi {
+            margin-bottom: 10px;
+        }
+        .analysis-multi li {
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .analysis-model {
+            margin-bottom: 10px;
+        }
+        .analysis-submit {
+            text-align: center;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .pagination .step-links {
+            display: inline-block;
+            margin: 0 10px;
+        }
+        .pagination .current {
+            margin: 0 10px;
+        }
+        .ajax-link {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+        #btn-submit-analysis {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container">
+        <h1>CSV Analysis</h1>
+        <nav class="navbar">
+            <a href="#data-preview" class="nav-link active" data-target="data-preview">Data Preview</a>
+            <a href="#explore" class="nav-link" data-target="explore">Explore</a>
+            <a href="#view" class="nav-link" data-target="view">View Data</a>
+            <a href="#analysis" class="nav-link" data-target="analysis">Analysis</a>
+        </nav>
+
+        <div id="data-preview" class="section active">
+            <h2>Data Preview</h2>
+            {{ data_preview_html | safe }}
+            <p>10 of {{ df_lines }} rows shown. See View-tab for details.</p>
+        </div>
+
+        <div id="explore" class="section visible">
+            <h2>Explore</h2>
+            {{ explore_html | safe }}
+        </div>
+
+        
+        
+        <div id="view" class="section visible">
+            <h2>View</h2>
+                <div  id="table-content">
+                    {% if data_all_rows.has_other_pages %}
+                <div class="pagination">
+                    <span class="step-links">
+                        {% if data_all_rows.has_previous %}
+                        <a href="?page=1" class="ajax-link">&laquo; first</a>
+                        <a href="?page={{ data_all_rows.previous_page_number }}" class="ajax-link">previous</a>
+                        {% endif %}
+
+                        <span class="current">
+                            Page {{ data_all_rows.number }} of {{ data_all_rows.paginator.num_pages }}.
+                        </span>
+
+                        {% if data_all_rows.has_next %}
+                            <span link="?page={{ data_all_rows.next_page_number }}" class="ajax-link">next</span>
+                            <span link="?page={{ data_all_rows.paginator.num_pages }}" class="ajax-link">last &raquo;</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+                    <table>
+                    <thead>
+                        <tr>
+                            {% for column in data_all_rows.object_list.columns %}
+                            <th>{{ column }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in data_all_rows.object_list.values %}
+                        <tr>
+                            {% for value in row %}
+                            <td>{{ value }}</td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if data_all_rows.has_other_pages %}
+                <div class="pagination">
+                    <span class="step-links">
+                        {% if data_all_rows.has_previous %}
+                        <a href="?page=1" class="ajax-link">&laquo; first</a>
+                        <a href="?page={{ data_all_rows.previous_page_number }}" class="ajax-link">previous</a>
+                        {% endif %}
+
+                        <span class="current">
+                            Page {{ data_all_rows.number }} of {{ data_all_rows.paginator.num_pages }}.
+                        </span>
+
+                        {% if data_all_rows.has_next %}
+                            <span link="?page={{ data_all_rows.next_page_number }}" class="ajax-link">next</span>
+                            <span link="?page={{ data_all_rows.paginator.num_pages }}" class="ajax-link">last &raquo;</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% endif %}
+                </div>
+        </div>
+        
+        {% comment %} Analysis {% endcomment %}
+        <div id="analysis" class="section visible">
+            <h2 style="margin: 24px 0;">Analysis</h2>
+            <div id="analysis-container">
+                <div class="analysis-container-left">
+                        <form action="/analysis/" method="post" id="form-analysis">
+                            {% csrf_token %}
+                            <div class="analysis-select">
+                                <label for="column"><b>Select Target Variable:</b></label>
+                                <select name="target">
+                                    {% for column in columns %}
+                                        <option value="{{ column }}">{{ column }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="analysis-multi">
+                                <label for="column"><b>Select Input Variables:</b></label>
+                                <ul>
+                                    <li>
+                                        <input type="checkbox" name="all" id="checkbox-all">
+                                        <label>All</label>
+                                    </li>
+                                    {% for column in columns %}
+                                        <li>
+                                            <input type="checkbox" name="input" value="{{ column }}">
+                                            <label>{{ column }}</label>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                            <div class="analysis-model">
+                                <label for="column"><b>Select Model:</b></label>
+                                <select name="model">
+                                    <option value="linear">Linear Regression</option>
+                                    <option value="logistic">Logistic Regression</option>
+                                    <option value="knn">KNN</option>
+                                </select>
+                            </div>
+                            <input type="hidden" name="file_id" value="{{ file_id }}">
+                            <div class="analysis-submit">
+                                <button type="submit" id="btn-submit-analysis">Analyze</button>
+                            </div>
+                        </form>
+                </div>
+                <div class="analysis-container-right">
+                    <h2>Analysis Result</h2>
+                    <div id="loading" class="visible"><p>Analyzing ...</p></div>
+                    <div id="result-analysis" ></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navLinks = document.querySelectorAll('.navbar .nav-link');
+            const containers = document.querySelectorAll('.section');
+            const formAnalysis = document.getElementById('form-analysis');
+            navLinks.forEach(function(link) {
+                link.addEventListener('click', function(event) {
+                    event.preventDefault();
+
+                    const targetId = this.getAttribute('data-target');
+                    const targetSection = document.getElementById(targetId);
+
+                    navLinks.forEach(function(link) {
+                        link.classList.remove('active');
+                    });
+                    this.classList.add('active');
+
+                    const sections = document.querySelectorAll('.section');
+                    sections.forEach(function(section) {
+                        section.classList.remove('active');
+                        section.classList.add('visible');
+                    });
+                    targetSection.classList.add('active');
+                    targetSection.classList.remove('visible');
+                });
+            });
+            formAnalysis.addEventListener('submit', function(event) {
+                const resultContainer = document.querySelector('#result-analysis');
+
+                event.preventDefault();
+                resultContainer.innerHTML = '';
+                document.getElementById("btn-submit-analysis").hidden = true;
+                document.querySelector('#loading').classList.remove('visible');
+                const formData = new FormData(this);
+                fetch("analysis", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest' 
+                    }
+                }).then(response => response.json()).then(data => {
+                    resultContainer.innerHTML = data.result_form;
+                    document.getElementById("btn-submit-analysis").hidden = false;
+                    document.querySelector('#loading').classList.add('visible');
+
+                }).catch((error ) => {
+                    resultContainer.innerHTML = "Error, please try again" + error;
+                    console.log("Error: ", error);
+                    document.getElementById("btn-submit-analysis").hidden = false;
+                    document.querySelector('#loading').classList.add('visible');
+                });
+            });
+            
+        });
+
+        // View Data
+        document.addEventListener('DOMContentLoaded', function() {
+            const ajaxLinks = document.querySelectorAll('.ajax-link');
+            const tableContainer = document.querySelector('#table-content');
+
+            setInterval(() => {
+                ajaxLinks.forEach(function(link) {
+                    link.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const url = this.getAttribute('link');
+                        fetch(url, {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest' 
+                            }
+                        }).then(response => response.json()).then(data => {
+                            tableContainer.innerHTML = data.table_html;
+                        }).catch((err) => {
+                            tableContainer.innerHTML = "Error, please try again";
+                            console.log("Error: ", err);
+                        });
+                    });
+                });
+            }, 100);
+        });
+
+        // Checkbox
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputAll = document.querySelector('input[name="all"][id="checkbox-all"]');
+            const inputCheckboxes = document.querySelectorAll('input[name="input"]');
+            inputAll.addEventListener('change', function() {
+                inputCheckboxes.forEach(function(checkbox) {
+                    checkbox.checked = inputAll.checked;
+                });
+            });
+        });
+    </script>
+</body>
+</html>

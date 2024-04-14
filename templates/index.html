@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Custom CSS -->
+    <style>
+        /* Custom CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .feature-description {
+            margin-bottom: 30px;
+        }
+        .feature-link {
+            margin-bottom: 20px;
+        }
+        .feature-link a {
+            text-decoration: none;
+        }
+        .feature-link .btn {
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="container">
+        <h1 class="text-center mb-4">Welcome to Your Website</h1>
+        <div class="row">
+            <div class="col-md-6">
+                <div class="feature-description">
+                    <h2>CSV Upload & Analysis</h2>
+                    <p>Upload and analyze CSV files to gain insights and perform data processing tasks.</p>
+                </div>
+                <div class="feature-link">
+                    <a href="{% url 'index_csv' %}" class="btn btn-primary btn-lg btn-block">Start CSV Analysis</a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="feature-description">
+                    <h2>Face Classification & Recognition</h2>
+                    <p>Utilize machine learning algorithms to classify and recognize faces in images.</p>
+                </div>
+                <div class="feature-link">
+                    <a href="{% url 'index_classify' %}" class="btn btn-primary btn-lg btn-block">Start Face Recognition</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
