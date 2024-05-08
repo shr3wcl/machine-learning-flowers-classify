@@ -74,12 +74,12 @@
             justify-content: space-between;
         }
         .analysis-container-left {
-            width: 50%;
+            width: 30%;
             display: inline-block;
             vertical-align: top;
         }
         .analysis-container-right {
-            width: 50%;
+            width: 70%;
             display: inline-block;
             vertical-align: top;
         }
@@ -138,6 +138,7 @@
             <a href="#explore" class="nav-link" data-target="explore">Explore</a>
             <a href="#view" class="nav-link" data-target="view">View Data</a>
             <a href="#analysis" class="nav-link" data-target="analysis">Analysis</a>
+            <a href="#visualize" class="nav-link" data-target="visualize">Visualize</a>
         </nav>
 
         <div id="data-preview" class="section active">
@@ -251,6 +252,7 @@
                                     <option value="linear">Linear Regression</option>
                                     <option value="logistic">Logistic Regression</option>
                                     <option value="knn">KNN</option>
+                                    <option value="decision_tree">Decision Tree</option>
                                 </select>
                             </div>
                             <input type="hidden" name="file_id" value="{{ file_id }}">
@@ -267,6 +269,12 @@
             </div>
         </div>
     </div>
+
+    <div id="visualize" class="section visible">
+        <h2>Visualize</h2>
+        {{ explore_html | safe }}
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const navLinks = document.querySelectorAll('.navbar .nav-link');

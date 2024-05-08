@@ -7,7 +7,7 @@ from django.http import JsonResponse, HttpResponse
 from django.template.loader import render_to_string
 
 import matplotlib.pyplot as plt
-
+from sklearn.metrics import roc_curve, auc, confusion_matrix, roc_auc_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
@@ -17,7 +17,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
-
+from sklearn.multiclass import OneVsRestClassifier
 from sklearn.metrics import classification_report, confusion_matrix
 import itertools
 import numpy as np
@@ -80,64 +80,118 @@ def analysis_model(request, file_id):
     else:
         return render(request, 'analysisCSV/index.html')
 
-def train_model(model, file_id, target, selected_variables):
+def train_model(model_type, file_id, target, selected_variables):
     uploaded_file = UploadedFile.objects.get(pk=file_id)
     df = pd.read_csv(uploaded_file.file)
-    
-    df = df.dropna()
-    df = df.drop_duplicates()
-    categories = []
-    nums = []
-    for variable in selected_variables:
-        if df[variable].dtype == "object":
-            categories.append(variable)
-        else:
-            nums.append(variable)
-    df_numericals = df[nums]
+    df = df.dropna(subset=selected_variables + [target])  # Ensure all selected variables and target have no NaN
+
+    categories = [variable for variable in selected_variables if df[variable].dtype == "object"]
+    numericals = [variable for variable in selected_variables if variable not in categories]
+
+    # Impute categorical variables
     imputer = SimpleImputer(strategy='most_frequent')
-    df_categories = df[categories]
-    df_categories = pd.DataFrame(imputer.fit_transform(df_categories), columns=df_categories.columns)
-    for cate in categories:
-        lb_encoder = LabelEncoder()
-        df_categories[cate] = lb_encoder.fit_transform(df[cate])
+    df[categories] = imputer.fit_transform(df[categories])
     
-    for num in nums:
-        mean = df_numericals[num].mean()
-        df_numericals.fillna(mean, inplace=True) 
-    X = pd.concat([df_numericals, df_categories], axis=1)
+    # Encode categorical variables
+    for category in categories:
+        le = LabelEncoder()
+        df[category] = le.fit_transform(df[category])
 
-    if df[target].dtype == "object":
-        lb_encoder = LabelEncoder()
-        y = lb_encoder.fit_transform(df[target])
-    else:
-        y = df[target]
-
-    trainX, testX, trainy, testy = train_test_split(X, y, test_size=0.2, random_state=0)
+    # Impute and scale numerical variables
+    df[numericals] = df[numericals].fillna(df[numericals].mean())
     scaler = StandardScaler()
-    trainX = scaler.fit_transform(trainX)
-    testX = scaler.transform(testX)
+    df[numericals] = scaler.fit_transform(df[numericals])
 
+    X = df[selected_variables]
+    y = df[target]
+
+    # Encode target if it's categorical
+    if df[target].dtype == "object":
+        le = LabelEncoder()
+        y = le.fit_transform(df[target])
+
+    print(f"Shapes - X: {X.shape}, y: {y.shape}")
+
+    # Check if the dimensions match
+    if X.shape[0] != y.shape[0]:
+        raise ValueError(f"Inconsistent numbers of samples: X has {X.shape[0]} samples, y has {y.shape[0]} samples.")
+
+    # Split the data
+    trainX, testX, trainy, testy = train_test_split(X, y, test_size=0.3, random_state=27)
+
+    
+    # Implement model based on type
     results = {}
 
-    if model == "linear":
+    if model_type == "linear":
         model = LinearRegression()
         model.fit(trainX, trainy)
+
+        # Đánh giá mô hình
         y_pred = model.predict(testX)
         rmse = mean_squared_error(testy, y_pred, squared=False)
+
+        # Lưu kết quả
         results['equation'] = str(model.coef_)  
-        results['accuracy'] = f"{rmse:.2f}"  
-        results['visualization'] = None       
+        results['accuracy'] = f"{rmse:.2f}"
+
+        # Vẽ biểu đồ
+        plt.scatter(testy, y_pred, color='blue')
+        plt.plot(testy, testy, color='red', linewidth=1)  # Đường thẳng y = x
+        plt.title('Linear Regression')
+        plt.xlabel('Actual')
+        plt.ylabel('Predicted')
+        random_file_name = uploaded_file.file.name.split("/")[-1].split(".")[0] + "-" + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + ".png"
+        plt_path = f"static/img/{random_file_name}"
+        plt.savefig(plt_path)
+        plt.close()
+
+        results['visualization'] = random_file_name       
+
+        return results
+    if model_type == "logistic":
+        clf = OneVsRestClassifier(LogisticRegression())
+        clf.fit(trainX, trainy)
+        y_scores = clf.predict_proba(testX)
+        fpr, tpr, _ = roc_curve(testy, y_scores[:, 1], pos_label=1)  
+        roc_auc = auc(fpr, tpr)
+        # auc_score = roc_auc_score(testy, y_scores[:, 1])
+        plt.figure()
+        lw = 2
+        plt.plot(fpr, tpr, color='darkorange',
+                lw=lw, label='ROC curve (area = %0.2f)' % roc_auc)
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('Receiver Operating Characteristic (ROC) Curve')
+        plt.legend(loc="best")
+        random_file_name = uploaded_file.file.name.split("/")[-1].split(".")[0] + "-" + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + ".png"
+        plt_path = f"static/img/{random_file_name}"
+        
+        # Lưu hình ảnh
+        plt.savefig(plt_path, dpi=300)
+        plt.close()
+
+        results = {}
+        results['visualization'] = random_file_name
+        results['equation'] = None
+        results['accuracy'] = f"{roc_auc:.2f}"
+
         return results
 
-    if model == "logistic":
-        clf = LogisticRegression()
-        clf.fit(trainX, trainy)
-        predict = clf.predict(testX)
-        accuracy = clf.score(testX, testy)
-        report = classification_report(testy, predict)
-        cm = confusion_matrix(testy, predict)
+    if model_type == "knn":
+        k = 5
+        knn = KNeighborsClassifier(n_neighbors=k)
+        knn.fit(trainX, trainy)
+        y_pred = knn.predict(testX)
+        accuracy = accuracy_score(testy, y_pred)
+        
+        # Tính toán confusion matrix
+        cm = confusion_matrix(testy, y_pred)
 
-        # Visualize confusion matrix
+        # Vẽ biểu đồ Confusion Matrix
         plt.figure(figsize=(8, 6))
         sns.heatmap(cm, annot=True, cmap='Blues', fmt='d', cbar=False)
         plt.xlabel('Predicted labels')
@@ -156,16 +210,25 @@ def train_model(model, file_id, target, selected_variables):
         results['visualization'] = random_file_name
 
         return results
-
-    if model == "knn":
-        k = 5
-        knn = KNeighborsClassifier(n_neighbors=k)
-        knn.fit(trainX, trainy)
-        y_pred = knn.predict(testX)
+    # Decision Tree
+    if model_type == "decision_tree":
+        from sklearn.tree import DecisionTreeClassifier
+        from sklearn import tree
+        dt = DecisionTreeClassifier()
+        dt.fit(trainX, trainy)
+        y_pred = dt.predict(testX)
         accuracy = accuracy_score(testy, y_pred)
-        results['equation'] = None  
-        results['accuracy'] = f"{accuracy:.2f}" 
-        results['visualization'] = None 
+        # Plot Decision Tree
+        plt.figure(figsize=(16, 20))
+        tree.plot_tree(dt, filled=True, feature_names=X.columns, class_names=np.unique(y).astype(str), fontsize=6)
+        random_file_name = uploaded_file.file.name.split("/")[-1].split(".")[0] + "-" + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + ".png"
+        plt_path = f"static/img/{random_file_name}"
+        plt.savefig(plt_path)
+        plt.close()
+        results = {}
+        results['equation'] = None
+        results['accuracy'] = f"{accuracy:.2f}"
+        results['visualization'] = random_file_name
         return results
 
 
