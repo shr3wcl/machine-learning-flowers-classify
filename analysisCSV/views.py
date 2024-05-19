@@ -129,11 +129,12 @@ def train_model(model_type, file_id, target, selected_variables):
 
         # Đánh giá mô hình
         y_pred = model.predict(testX)
-        rmse = mean_squared_error(testy, y_pred, squared=False)
-
+        rmse = mean_squared_error(testy, y_pred)
+        # rmse = np.sqrt(mean_squared_error(testy, y_pred))
+        accuracy = model.score(testX, testy)
         # Lưu kết quả
         results['equation'] = str(model.coef_)  
-        results['accuracy'] = f"{rmse:.2f}"
+        results['accuracy'] = f"{accuracy:.2f}"
 
         # Vẽ biểu đồ
         plt.scatter(testy, y_pred, color='blue')
@@ -221,6 +222,28 @@ def train_model(model_type, file_id, target, selected_variables):
         # Plot Decision Tree
         plt.figure(figsize=(16, 20))
         tree.plot_tree(dt, filled=True, feature_names=X.columns, class_names=np.unique(y).astype(str), fontsize=6)
+        random_file_name = uploaded_file.file.name.split("/")[-1].split(".")[0] + "-" + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + ".png"
+        plt_path = f"static/img/{random_file_name}"
+        plt.savefig(plt_path)
+        plt.close()
+        results = {}
+        results['equation'] = None
+        results['accuracy'] = f"{accuracy:.2f}"
+        results['visualization'] = random_file_name
+        return results
+    
+    # Random Forest
+    if model_type == "random_forest":
+        from sklearn.ensemble import RandomForestClassifier
+        from sklearn import tree
+        
+        rf = RandomForestClassifier()
+        rf.fit(trainX, trainy)
+        y_pred = rf.predict(testX)
+        accuracy = accuracy_score(testy, y_pred)
+        # Plot Decision Tree
+        plt.figure(figsize=(16, 20))
+        tree.plot_tree(rf.estimators_[0], filled=True, feature_names=X.columns, class_names=np.unique(y).astype(str), fontsize=6)
         random_file_name = uploaded_file.file.name.split("/")[-1].split(".")[0] + "-" + datetime.datetime.now().strftime("%Y%m%d%H%M%S") + ".png"
         plt_path = f"static/img/{random_file_name}"
         plt.savefig(plt_path)

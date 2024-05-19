@@ -7,6 +7,7 @@
   }
   
   .navbar-main {
+    z-index: 1000;
     background-color: #333;
     overflow: hidden;
     position: fixed; /* Thêm thuộc tính position */
@@ -28,17 +29,15 @@
     color: black;
   }
   
-  /* Thêm phần padding cho nội dung dưới navbar */
   .content {
     padding: 15px 20px;
-    padding-top: 70px; /* Đảm bảo không bị che phủ bởi navbar */
   }
 </style>
 </head>
 <body>
 <div class="navbar-main">
     <a href="/">Home</a>
-    <a href="{% url 'index_classify' %}">Classify</a>
+    <a href="{% url 'index_classify' %}">Flower Detection</a>
     <a href="{% url 'index_csv' %}">CSV</a>
 </div>
 </body>

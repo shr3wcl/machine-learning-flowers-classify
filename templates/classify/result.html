@@ -1,0 +1,14 @@
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <img src="/classify/image/{{ image_url }}" style="max-width: 100%;"/>
+            <p class="status">Status: {{ status }}</p>
+            <p class="lead">The image has been classified as: 
+                <span class="badge badge-primary">{{ result }}</span>
+            </p>
+            <div class="feature-link">
+                <a href="{% url 'index_classify' %}" class="btn btn-primary">Classify Another Image</a>
+            </div>
+        </div>
+    </div>
+</div>
