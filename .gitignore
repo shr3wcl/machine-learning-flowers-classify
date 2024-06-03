@@ -1,3 +1,8 @@
 media/images/*
 media/uploads/*
 static/img/*
+venv/*
+training_model/test/*
+training_model/train/*
+training_model/val/*
+weights/*
