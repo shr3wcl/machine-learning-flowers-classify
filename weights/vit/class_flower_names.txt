@@ -1,0 +1,1 @@
+{0: 'tulip', 1: 'Lotus', 2: 'Lily', 3: 'hibiscus', 4: 'water_lily', 5: 'bougainvillea', 6: 'sunflower', 7: 'Hoa Phuong Do', 8: 'dandelion', 9: 'Lantana', 10: 'rose', 11: 'yellow_apricot_blossom', 12: 'orchid', 13: 'common_daisy'}
